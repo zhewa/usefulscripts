@@ -80,13 +80,13 @@ processCellRangerOutput <- function(
 
     for (i in seq_along(samples)) {
         mm <- Matrix::readMM(gzfile(file.path(cellRangerDir,
-            cellRangerOuts, fileNames[["matrix"]])))
+            samples[i], cellRangerOuts, fileNames[["matrix"]])))
 
         fe <- read.table(gzfile(file.path(cellRangerDir,
-            cellRangerOuts, fileNames[["features"]])), sep = "\t")
+            samples[i], cellRangerOuts, fileNames[["features"]])), sep = "\t")
 
         bc <- read.table(gzfile(file.path(cellRangerDir,
-            cellRangerOuts, fileNames[["barcodes"]])), sep = "\t")
+            samples[i], cellRangerOuts, fileNames[["barcodes"]])), sep = "\t")
         coldata[[i]] <- rep(samples[i], nrow(bc))
 
         ma <- as.matrix(mm)
@@ -109,8 +109,8 @@ processCellRangerOutput <- function(
     }
 
     expr <- do.call(cbind, res)
-    expr <- data.table::as.data.table(expr, keep.rownames = TRUE)
-    colnames(expr)[1] <- "geneID"
+    exprdt <- data.table::as.data.table(expr, keep.rownames = TRUE)
+    colnames(exprdt)[1] <- "geneID"
 
     if (isTRUE(writeAllSampleCounts)) {
         fn <- file.path(outDir,
@@ -118,7 +118,7 @@ processCellRangerOutput <- function(
         if (isFALSE(overwrite) & file.exists(fn)) {
             warning("File already exists! Skip writting file ", fn)
         } else {
-            data.table::fwrite(expr,
+            data.table::fwrite(exprdt,
                 file = fn,
                 sep = sep,
                 row.names = TRUE)
