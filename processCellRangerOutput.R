@@ -65,7 +65,7 @@ processCellRangerOutput <- function(
     gzipped = TRUE) {
 
     fileNames <- c(matrix = "matrix.mtx",
-        features = "features.tsv",
+        features = "genes.tsv",
         barcodes = "barcodes.tsv")
     if (isTRUE(gzipped)) {
         fileNames <- vapply(fileNames,
@@ -116,6 +116,7 @@ processCellRangerOutput <- function(
             if (isFALSE(overwrite) & file.exists(fn)) {
                 warning("File already exists! Skip writting file ", fn)
             } else {
+                madt <- as.data.table(ma, keep.rownames = "geneID")
                 data.table::fwrite(ma,
                     file = fn,
                     sep = sep,
@@ -125,8 +126,7 @@ processCellRangerOutput <- function(
     }
 
     expr <- do.call(cbind, res)
-    exprdt <- data.table::as.data.table(expr, keep.rownames = TRUE)
-    colnames(exprdt)[1] <- "geneID"
+    exprdt <- data.table::as.data.table(expr, keep.rownames = "geneID")
 
     if (isTRUE(writeAllSampleCounts)) {
         fn <- file.path(outDir,
