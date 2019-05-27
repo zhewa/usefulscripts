@@ -79,14 +79,30 @@ processCellRangerOutput <- function(
     coldata <- vector("list", length = length(samples))
 
     for (i in seq_along(samples)) {
-        mm <- Matrix::readMM(gzfile(file.path(cellRangerDir,
-            samples[i], cellRangerOuts, fileNames[["matrix"]])))
+        if (isTRUE(gzipped)) {
+            mm <- Matrix::readMM(gzfile(file.path(cellRangerDir,
+                samples[i], cellRangerOuts, fileNames[["matrix"]])))
 
-        fe <- read.table(gzfile(file.path(cellRangerDir,
-            samples[i], cellRangerOuts, fileNames[["features"]])), sep = "\t")
+            fe <- read.table(gzfile(file.path(cellRangerDir,
+                samples[i], cellRangerOuts, fileNames[["features"]])),
+                sep = "\t")
 
-        bc <- read.table(gzfile(file.path(cellRangerDir,
-            samples[i], cellRangerOuts, fileNames[["barcodes"]])), sep = "\t")
+            bc <- read.table(gzfile(file.path(cellRangerDir,
+                samples[i], cellRangerOuts, fileNames[["barcodes"]])),
+                sep = "\t")
+        } else {
+            mm <- Matrix::readMM(file.path(cellRangerDir,
+                samples[i], cellRangerOuts, fileNames[["matrix"]]))
+
+            fe <- read.table(file.path(cellRangerDir,
+                samples[i], cellRangerOuts, fileNames[["features"]]),
+                sep = "\t")
+
+            bc <- read.table(file.path(cellRangerDir,
+                samples[i], cellRangerOuts, fileNames[["barcodes"]]),
+                sep = "\t")
+        }
+
         coldata[[i]] <- rep(samples[i], nrow(bc))
 
         ma <- as.matrix(mm)
@@ -128,8 +144,16 @@ processCellRangerOutput <- function(
     sce <- SingleCellExperiment::SingleCellExperiment(
         assays = list(counts = expr))
     SummarizedExperiment::rowData(sce) <- fe
-    colnames(SummarizedExperiment::rowData(sce)) <- c("geneID",
-        "genename", "genebiotype")
+
+    if (ncol(fe) == 2) {
+        colnames(SummarizedExperiment::rowData(sce)) <- c("geneID", "genename")
+    } else if (ncol(fe) == 3) {
+        colnames(SummarizedExperiment::rowData(sce)) <- c("geneID", "genename",
+            "genebiotype")
+    } else {
+        stop("Invalid number of columns for gene annotation (",
+            fileNames[["features"]], ")")
+    }
     coldata <- unlist(coldata)
     SummarizedExperiment::colData(sce)["sample"] <- data.frame(sample = coldata)
 
